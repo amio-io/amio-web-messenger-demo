@@ -28,7 +28,7 @@
 </template>
 
 <script>
-  import io from 'socket.io-client'
+  import amioChatClient from '../amio-chat.client.js'
 
   export default {
     data() {
@@ -36,8 +36,7 @@
         user: '',
         message: '',
         messages: [],
-        socket: null,
-        sessionId: localStorage.getItem('amio_chat_session'),
+        chatClient: amioChatClient,
         channelId: '12345'
       }
     },
@@ -50,47 +49,19 @@
           message: this.message
         })
 
-        this.socket.emit('message_client', {
-          version: 1,
-          content: {
-            type: 'text',
-            payload: this.message
-          }
-        })
+        this.chatClient.sendMessage(this.message)
         this.message = ''
-      }
-    },
-    mounted() {
-      const opts = {
-        reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
-        reconnectionAttempts: 99999,
-        query: {
-          channelId: this.channelId
-        }
-      }
-      if(this.sessionId) {
-        opts.query.sessionId = this.sessionId
-      }
-      this.socket = io('localhost:8888', opts)
-
-      this.socket.on('message_server', (data, ack) => {
+      },
+      receiveMessage(data) {
         this.messages.push({
           user: this.channelId,
           message: data.content.payload
         })
-        ack({
-          version: 1,
-          message_id: data.id
-        })
-      })
-
-      this.socket.on('connection_accepted', data => {
-        const sessionId = data.session_id
-        this.sessionId = sessionId
-        localStorage.setItem('amio_chat_session', data.session_id)
-      })
+      }
+    },
+    mounted() {
+      this.chatClient.connect(this.channelId)
+      this.chatClient.setMessageReceivedHandler(this.receiveMessage)
     }
   }
 </script>
