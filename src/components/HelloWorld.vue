@@ -37,7 +37,8 @@
         message: '',
         messages: [],
         socket: null,
-        sessionId: localStorage.getItem('amio_chat_session')
+        sessionId: localStorage.getItem('amio_chat_session'),
+        channelId: '12345'
       }
     },
     methods: {
@@ -50,13 +51,7 @@
         })
 
         this.socket.emit('message_client', {
-          channel: {
-            id: '12345'
-          },
-          contact: {
-            id: this.sessionId,
-            name: this.user
-          },
+          version: 1,
           content: {
             type: 'text',
             payload: this.message
@@ -70,19 +65,25 @@
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
-        reconnectionAttempts: 99999
+        reconnectionAttempts: 99999,
+        query: {
+          channelId: this.channelId
+        }
       }
       if(this.sessionId) {
-        opts.query = {sessionId: this.sessionId}
+        opts.query.sessionId = this.sessionId
       }
       this.socket = io('localhost:8888', opts)
 
       this.socket.on('message_server', (data, ack) => {
         this.messages.push({
-          user: data.contact.id,
+          user: this.channelId,
           message: data.content.payload
         })
-        ack('ok')
+        ack({
+          version: 1,
+          message_id: data.id
+        })
       })
 
       this.socket.on('connection_accepted', data => {
