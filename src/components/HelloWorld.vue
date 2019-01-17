@@ -22,7 +22,7 @@
           <input type="text" v-model="message">
         </div>
         <button type="submit">Send</button>
-        <button type="button" @click="sendMessagesRead">Mark as read</button>
+        <button type="button" @click="markMessagesAsRead">Mark as read</button>
       </form>
     </div>
   </div>
@@ -38,7 +38,7 @@
         message: '',
         messages: [],
         chatClient: AmioWebchatClient,
-        channelId: process.env.VUE_APP_CHANNEL_ID || '12345678'
+        channelId: process.env.VUE_APP_CHANNEL_ID
       }
     },
     methods: {
@@ -59,7 +59,7 @@
           message: data.content.payload
         })
       },
-      sendMessagesRead() {
+      markMessagesAsRead() {
         this.chatClient.markMessagesAsRead()
       }
     },
