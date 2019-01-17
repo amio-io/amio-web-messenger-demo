@@ -7,7 +7,7 @@
     "build": "vue-cli-service build"
   },
   "dependencies": {
-    "socket.io-client": "^2.2.0",
+    "amio-webchat-sdk": "^0.1.1",
     "vue": "^2.5.17"
   },
   "devDependencies": {
