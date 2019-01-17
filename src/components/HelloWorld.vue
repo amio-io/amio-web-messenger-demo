@@ -22,13 +22,14 @@
           <input type="text" v-model="message">
         </div>
         <button type="submit">Send</button>
+        <button type="button" @click="markMessagesAsRead">Mark as read</button>
       </form>
     </div>
   </div>
 </template>
 
 <script>
-  import amioChatClient from '../amio-chat.client.js'
+  import {AmioWebchatClient} from 'amio-webchat-sdk'
 
   export default {
     data() {
@@ -36,8 +37,8 @@
         user: '',
         message: '',
         messages: [],
-        chatClient: amioChatClient,
-        channelId: '12345'
+        chatClient: AmioWebchatClient,
+        channelId: process.env.VUE_APP_CHANNEL_ID
       }
     },
     methods: {
@@ -49,7 +50,7 @@
           message: this.message
         })
 
-        this.chatClient.sendMessage(this.message)
+        this.chatClient.sendTextMessage(this.message)
         this.message = ''
       },
       receiveMessage(data) {
@@ -57,11 +58,21 @@
           user: this.channelId,
           message: data.content.payload
         })
+      },
+      markMessagesAsRead() {
+        this.chatClient.markMessagesAsRead()
       }
     },
     mounted() {
-      this.chatClient.connect(this.channelId)
-      this.chatClient.setMessageReceivedHandler(this.receiveMessage)
+      const config = {
+        channelId: this.channelId,
+        localStorageSessionName: 'my_cool_chat'
+      }
+      if(process.env.VUE_APP_AMIO_WEBCHAT_SERVER_URL) {
+        config._amioWebchatServerUrl = process.env.VUE_APP_AMIO_WEBCHAT_SERVER_URL
+      }
+      this.chatClient.connect(config)
+      this.chatClient.onMessageReceived(this.receiveMessage)
     }
   }
 </script>
