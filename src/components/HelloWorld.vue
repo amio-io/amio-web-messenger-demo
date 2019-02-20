@@ -2,27 +2,34 @@
   <div id="chat">
     <div>
       <div>
-        <h3>Chat Group</h3>
+        <h3>Chat</h3>
+        <p>Channel: {{channelId}}</p>
         <hr>
       </div>
-      <div>
-        <div class="messages" v-for="(msg, index) in messages" :key="index">
-          <p><span>{{ msg.user }}: </span>{{ msg.message }}</p>
-        </div>
-      </div>
+      <p v-if="historyEnd">All messages loaded.</p>
+      <table>
+        <template v-for="(msg, index) in messages">
+          <tr :key="`row1-${index}`">
+            <td>{{msg.direction}}</td>
+            <td colspan="2">{{msg.content.payload}}</td>
+          </tr>
+          <tr :key="`row2-${index}`" class="small chat-row">
+            <td>S: {{msg.sent}}</td>
+            <td>D: {{msg.delivered}}</td>
+            <td>R: {{msg.read}}</td>
+          </tr>
+        </template>
+      </table>
     </div>
-    <div>
+    <div style="margin-top: 20px">
       <form @submit.prevent="sendMessage">
-        <div>
-          <label for="user">User:</label>
-          <input type="text" v-model="user">
-        </div>
         <div>
           <label for="message">Message:</label>
           <input type="text" v-model="message">
         </div>
         <button type="submit">Send</button>
         <button type="button" @click="markMessagesAsRead">Mark as read</button>
+        <button type="button" @click="loadHistory">Load history</button>
       </form>
     </div>
   </div>
@@ -38,29 +45,37 @@
         message: '',
         messages: [],
         chatClient: AmioWebchatClient,
-        channelId: process.env.VUE_APP_CHANNEL_ID
+        channelId: process.env.VUE_APP_CHANNEL_ID,
+        historyCount: 3,
+        historyCursor: null,
+        historyEnd: false
       }
     },
     methods: {
       sendMessage(e) {
         e.preventDefault()
 
-        this.messages.push({
-          user: this.user,
-          message: this.message
-        })
-
         this.chatClient.sendTextMessage(this.message)
+          .then((response) => {
+            this.messages.push(response)
+          })
         this.message = ''
       },
       receiveMessage(data) {
-        this.messages.push({
-          user: this.channelId,
-          message: data.content.payload
-        })
+        this.messages.push(data)
       },
       markMessagesAsRead() {
         this.chatClient.markMessagesAsRead()
+      },
+      loadHistory() {
+        this.chatClient.listMessages(this.historyCount, this.historyCursor)
+          .then(this.historyLoaded)
+      },
+      historyLoaded(history) {
+        this.historyCursor = history.cursor.next
+        this.historyEnd = !history.cursor.has_next
+        const loadedMsgs = history.messages.reverse()
+        this.messages = loadedMsgs.concat(this.messages)
       }
     },
     mounted() {
@@ -81,4 +96,21 @@
 #chat {
   text-align: left;
 }
+
+.chat-row {
+  border-bottom: 1px solid black;
+}
+.chat-row > td {
+  padding: 5px 5px 5px 0; 
+}
+
+.small > td {
+  color: gray;
+  font-size: small;  
+}
+
+table {
+  border-collapse: collapse
+}
+
 </style>
