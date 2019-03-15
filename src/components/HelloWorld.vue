@@ -4,6 +4,8 @@
       <div>
         <h3>Chat</h3>
         <p>Channel: {{channelId}}</p>
+        <p v-if="online" style="color: green">online</p>
+        <p v-else style="color: red">offline</p>
         <hr>
       </div>
       <p v-if="historyEnd">All messages loaded.</p>
@@ -30,6 +32,7 @@
         <button type="submit">Send</button>
         <button type="button" @click="markMessagesAsRead">Mark as read</button>
         <button type="button" @click="loadHistory">Load history</button>
+        <button type="button" @click="sendNotification">Send test notification</button>
       </form>
     </div>
   </div>
@@ -48,18 +51,36 @@
         channelId: process.env.VUE_APP_CHANNEL_ID,
         historyCount: 3,
         historyCursor: null,
-        historyEnd: false
+        historyEnd: false,
+        online: false
       }
     },
     methods: {
       sendMessage(e) {
         e.preventDefault()
+        const sentMessage = {
+          direction: 'sent',
+          content: {
+            type: 'text',
+            payload: this.message
+          },
+          sent: new Date().toISOString(),
+        }
+        this.messages.push(sentMessage)
 
         this.chatClient.sendTextMessage(this.message)
           .then((response) => {
-            this.messages.push(response)
+            //update the message with extra data from response (delivered timestamp etc.)
+            Object.assign(sentMessage, response)
           })
+          
         this.message = ''
+      },
+      sendNotification() {
+        this.chatClient.sendNotification({test: 'hello'})
+      },
+      receiveNotification(data) {
+        this.messages.push({content: {payload: `Notification: ${JSON.stringify(data)}`}})
       },
       receiveMessage(data) {
         this.messages.push(data)
@@ -76,6 +97,9 @@
         this.historyEnd = !history.cursor.has_next
         const loadedMsgs = history.messages.reverse()
         this.messages = loadedMsgs.concat(this.messages)
+      },
+      setOnline(online) {
+        this.online = online
       }
     },
     mounted() {
@@ -88,6 +112,10 @@
       }
       this.chatClient.connect(config)
       this.chatClient.onMessageReceived(this.receiveMessage)
+      this.chatClient.onMessageEcho(this.receiveMessage)
+      this.chatClient.onConnectionStateChanged(this.setOnline)
+      this.chatClient.onNotificationReceived(this.receiveNotification)
+      this.loadHistory()
     }
   }
 </script>
