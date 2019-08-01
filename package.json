@@ -7,12 +7,12 @@
     "build": "vue-cli-service build"
   },
   "dependencies": {
-    "amio-chat-sdk-web": "^1.0.0",
-    "vue": "^2.6.10"
+    "amio-chat-sdk-web": "1.0.0",
+    "vue": "2.6.10"
   },
   "devDependencies": {
-    "@vue/cli-plugin-babel": "^3.5.3",
-    "@vue/cli-service": "^3.5.3",
-    "vue-template-compiler": "^2.6.10"
+    "@vue/cli-plugin-babel": "3.5.3",
+    "@vue/cli-service": "3.5.3",
+    "vue-template-compiler": "2.6.10"
   }
 }
