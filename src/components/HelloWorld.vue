@@ -4,6 +4,7 @@
       <div>
         <h3>Chat</h3>
         <p>Channel: {{channelId}}</p>
+        <p>Contact: {{contactId}}</p>
         <p v-if="online" style="color: green">online</p>
         <p v-else style="color: red">offline</p>
         <hr>
@@ -34,13 +35,14 @@
         <button type="button" @click="loadHistory">Load history</button>
         <button type="button" @click="sendNotification">Send test notification</button>
         <button type="button" @click="sendImage">Send image</button>
+        <button type="button" @click="triggerPostback">Postback</button>
       </form>
     </div>
   </div>
 </template>
 
 <script>
-  import {AmioWebchatClient} from 'amio-webchat-sdk'
+  import {amioChat} from 'amio-chat-sdk-web'
 
   export default {
     data() {
@@ -48,12 +50,14 @@
         user: '',
         message: '',
         messages: [],
-        chatClient: AmioWebchatClient,
+        chatClient: amioChat,
         channelId: process.env.VUE_APP_CHANNEL_ID,
         historyCount: 3,
         historyCursor: null,
         historyEnd: false,
-        online: false
+        online: false,
+        storage: null,
+        localStorageSessionName: 'amio_chat_session'
       }
     },
     methods: {
@@ -92,6 +96,9 @@
       markMessagesAsRead() {
         this.chatClient.notifications.sendMessagesRead()
       },
+      triggerPostback() {
+        this.chatClient.postbacks.send('test_payload')
+      },
       loadHistory() {
         this.chatClient.messages.list(this.historyCursor, this.historyCount)
           .then(this.historyLoaded)
@@ -106,14 +113,22 @@
         this.online = online
       }
     },
+    computed: {
+      contactId() {
+        if(this.storage) {
+          return this.storage.getItem(this.localStorageSessionName)
+        }
+        return ''
+      }
+    },
     mounted() {
       const config = {
         channelId: this.channelId,
-        localStorageSessionName: 'my_cool_chat'
       }
       if(process.env.VUE_APP_AMIO_WEBCHAT_SERVER_URL) {
-        config._amioWebchatServerUrl = process.env.VUE_APP_AMIO_WEBCHAT_SERVER_URL
+        config._amioChatServerUrl = process.env.VUE_APP_AMIO_WEBCHAT_SERVER_URL
       }
+      this.storage = window.localStorage
       this.chatClient.events.onMessageReceived(this.receiveMessage)
       this.chatClient.events.onMessageEcho(this.receiveMessage)
       this.chatClient.events.onConnectionStateChanged(this.setOnline)
